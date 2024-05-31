@@ -45,7 +45,8 @@ void LcdDisplay::write(const char* text) const
 void LcdDisplay::clear() const
 {
 	bus.instructionWrite(CLEAR_DISPLAY);
-	_delay_ms(1.52);
+	/// XXX: Z jakiegoś powodu 1.52 to za mało.
+	_delay_ms(2);
 }
 
 void LcdDisplay::goTo(uint8_t line, uint8_t column) const

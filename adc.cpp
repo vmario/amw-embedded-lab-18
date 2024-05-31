@@ -5,7 +5,6 @@
 
 const Adc adc;
 
-volatile uint16_t temperatureAdc;
 volatile uint16_t keyboardAdc{UINT16_MAX};
 
 /**
@@ -13,22 +12,12 @@ volatile uint16_t keyboardAdc{UINT16_MAX};
  */
 ISR(ADC_vect)
 {
-	static uint8_t iteration;
+	static bool notFirstMeasure;
 
-	if (bit_is_clear(ADMUX, REFS1)) {
-		if (iteration++ > 0) {
-			keyboardAdc = adc.measure();
-		}
-		if (iteration > 100) {
-			iteration = 0;
-			ADMUX = _BV(REFS1) | _BV(REFS0) | _BV(MUX2) | _BV(MUX0);
-		}
+	if (notFirstMeasure) {
+		notFirstMeasure = true;
 	} else {
-		if (iteration++ > 0) {
-			temperatureAdc = adc.measure();
-			iteration = 0;
-			ADMUX = _BV(REFS0);
-		}
+		keyboardAdc = adc.measure();
 	}
 
 	TIFR1 |= _BV(TOV1);

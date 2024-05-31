@@ -6,6 +6,7 @@ constexpr uint8_t DISPLAY_LENGTH{16}; ///< Szerokość wyświetlacza.
 constexpr char DISPLAY_CODE_DEGREE{0}; ///< Kod symbolu stopnia.
 constexpr char DISPLAY_CODE_NEGATIVE_ARROW{1}; ///< Kod strzałki wskazującej edytowaną nastawę.
 constexpr char DISPLAY_CODE_ELLIPSIS{2}; ///< Kod wielokropka.
+constexpr char DISPLAY_CODE_VERTICAL_LINE{3}; ///< Pionowa linia przez całą wysokość pola.
 
 /**
  * Stany menu.
@@ -26,34 +27,19 @@ struct Menu {
 	void initialize() const;
 
 	/**
-	 * Obsługa głównego ekranu.
+	 * Obsługa klawiatury.
 	 */
-	void main();
+	void handleKey() const;
 
 	/**
-	 * Edycja temperatury zadanej.
+	 * Wyświetla wynik losowania.
 	 */
-	void editTarget();
-
-	/**
-	 * Edycja histerezy.
-	 */
-	void editHysteresis();
-
-	/**
-	 * Czyszczenie EEPROM.
-	 */
-	void erase();
+	void showResult() const;
 
 	/**
 	 * Pasek postępu.
 	 */
 	void showProgress() const;
-
-	/**
-	 * Uruchomienie bieżącego stanu.
-	 */
-	void run() const;
 private:
 	MENU_STATE state; ///< Bieżący stan menu.
 };
