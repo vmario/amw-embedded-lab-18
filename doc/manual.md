@@ -1,5 +1,5 @@
 ---
-title: "Ćwiczenie 17: Przechowywanie danych użytkownika w pamięci EEPROM"
+title: "Ćwiczenie 18: Generator pseudolosowy i wskaźniki na funkcje"
 subtitle: "Instrukcja laboratorium"
 footer-left: "Instrukcja laboratorium"
 author: [Mariusz Chilmon <<mariusz.chilmon@ctm.gdynia.pl>>]
@@ -32,121 +32,115 @@ header-includes: |
     font=\footnotesize,
 }
 
-> Programming is learned by writing programs.
+> Code never lies, comments sometimes do.
 >
-> — _Brian Kernighan_
+> — _Ron Jeffries_
 
 # Cel ćwiczenia
 
 Celem ćwiczenia jest zapoznanie się z:
 
-* obsługą pamięci EEPROM za pomocą biblioteki \texttt{libc},
-* obsługą pamięci EEPROM za pomocą bezpośrednich operacji na rejestrach.
+* sposobem działania generatora pseudolosowego,
+* metodami pozyskiwania entropii w systemach mikroprocesorowych,
+* wykorzystaniem implementacji podstawowych algorytmów z biblioteki standardowej,
+* wykorzystaniem wskaźników na funkcje.
 
 # Uruchomienie programu wyjściowego
 
 1. Podłącz płytkę _LCD Keypad Shield_ do _Arduino Uno_.
-1. Podłącz termometr LM35DZ do linii _A5_.
-1. W pierwszej linii wyświetlacza widoczne są dwie nastawy: _T_ — temperatura zadana $T_t$ i _H_ — histereza $T_h$.
-1. Nastawy można zmieniać za pomocą przycisków _UP_ i _DOWN_, wybierając je wcześniej przyciskiem _SELECT_.
-1. W drugiej linii wyświetlacza widoczna jest bieżąca temperatura i stan grzałki.
+1. W lewej części wyświetlacza widocznych jest 6 liczb wybranych przez generator pseudolosowy, symulujący losowanie Lotto.
+1. Po kliknięciu przycisku _RIGHT_ losowane są nowe liczby.
+1. W prawej części wyświetlacza widoczne jest ziarno losowości.
 
-Program wyjściowy symuluje termostat, który włącza grzałkę po obniżeniu temperatury poniżej $T_t - T_h$ i wyłącza po  prekroczeniu $T_t + T_h$.
-
-![Histereza w termostacie sterującym grzałką](hysteresis.svg){width=400px}
-
-Zadaniem histerezy jest zmniejszenie częstotliwości przełączania elementu wykonawczego, kosztem zmniejszenia precyzji regulowanego parametru.
-
-W naszym przypadku, gdy mierzona temperatura oscyluje wokół temperatury zadanej $T_t$ np. z powodu ruchu powietrza w pomieszczeniu albo szumu pomiarowego, może dojść do sytuacji, gdy element wykonywaczy byłby przełączany w bardzo krótkich odcinkach czasu. Jest to zjawisko, które może być szkodliwe dla elementu sterującego (np. w przekaźniku może dojść do wypalenia styków), jak i dla elementu wykonawczego (np. kompresor w lodówce może ulec szybkiemu zużyciu).
-
-Histereza zazwyczaj jest jednym z parametrów, które są dostępne dla użytkownika jako nastawa, co pozwala mu ustalić kompromis między precyzją sterowania a częstotliwością przełączania.
-
-\DefineLCDchar{degree}{00010001010001000000000000000000000}
+\DefineLCDchar{verticalLine}{0010000100001000010000100001000010000100}
 \begin{center}
 \LCD{2}{16}
-    |T:25.0{degree}C H:1.0{degree}C|
-    |  24.0{degree}C [HEAT] |
-\captionof{figure}{Przykładowy stan wyświetlacza}
+    | 1 19 16 {verticalLine} Seed:|
+    |36 40 14 {verticalLine}     1|
+\captionof{figure}{Wyjściowy stan wyświetlacza}
 \end{center}
+
+Program wyjściowy symuluje losowanie liczb w grze Lotto — wybiera w funkcji `Lotto::shuffle()` 6 niepowtarzających się liczb z przedziału [1; 49], dokonując za pomocą algorytmu Fishera-Yatesa permutacji tablicy `numbersPool`, wypełnionej wstępnie kolejnymi liczbami naturalnymi od 1 do 49. Na koniec wybieranych jest 6 pierwszych liczb z tak przemieszanej tablicy.
+
+Algorytm Fishera-Yatesa nie zapewnia losowania sam w sobie, ale wymaga użycia zewnętrznej funkcji losującej. W języku C mamy do dyspozycji funkcję `rand()`, która zwraca wartości z zakresu [0;&nbsp;`RAND_MAX`], gdzie w naszym przypadku `RAND_MAX` wynosi 32767.
+
+\awesomebox[teal]{2pt}{\faCode}{teal}{Język C++ od wersji C++11 posiada bibliotekę \lstinline{random}, która zawiera bogaty zestaw narzędzi do generowania wartości pseudolosowych zgodnych z różnymi rozkładami prawdopodobieństwa i z użyciem różnych implementacji generatorów. Ze względu na złożoność nie jest ona dostępna dla platformy AVR.}
+
+Należy jednak pamiętać, że żaden generator pseudolosowy, czyli PRNG (_Pseudorandom Number Generator_), nie generuje liczb losowych! Mikroprocesor jest urządzeniem deterministycznym zaprojektowanym z założeniem, że lepiej, by nie działał w ogóle niż działał w sposób nieprzewidywalny[^1]. Nie istnieje zatem algorytm, który byłby w stanie wygenerować prawdziwie losowe liczby[^2]. Algorytmy PRNG zaprojektowane są w sposób, który zapewnia odpowiedni rozkład generowanych liczb, przypominający losowy, ale wiele z nich jest do tego stopnia deterministycznych, że po zebraniu kilku wygenerowanych liczb można przewidzieć następne. Stąd po każdym włączeniu urządzenia, widoczne są te same liczby — algorytm zaczyna pracę od tej samej wartości.
+
+[^1]: _Vide_ BOR (_Brown-out Detector_), czyli obwód wyłączający mikrokontroler przy zbyt niskim napięciu zasilania, kiedy część procesora może jeszcze pracować, ale błędnie.
+
+[^2]: &bdquo;Anyone who considers arithmetical methods of producing random digits is, of course, in a state of sin&rdquo; — John von Neumann.
 
 # Zadanie podstawowe
 
-Celem zadania podstawowego jest zapisywanie nastaw urządzenia w pamięci nieulotnej EEPROM.
+Celem zadania podstawowego jest inicjalizacja PRNG wartością o charakterze losowym, a przynajmniej bardzo trudnym do przewidzenia i mało powtarzalnym. Idealnym źródłem byłyby zjawiska kwantowe, które z założenia są czysto losowe, co wykazano w wielu złożonych eksperymentach, wykazując brak korelacji z jakimkolwiek czynnikiem, włączając w to sygnały sprzed 10 miliardów lat[^3]. Przykładami źródeł o takim charakterze są szumy śrutowe złącza p-n czy rozpad promieniotwórczy.
+
+[^3]: Ewentualnie wyniki eksperymentów zostały z góry ustalone u zarania dziejów Wszechświata, ale dla nas jest to nieodróżnialne.
+
+Na nasze potrzeby w zupełności wystarczające jest wykorzystanie jakiegoś procesu o trudnym do przewidzenia przebiegu, np. szumu termicznego, parametrów pogodowych, zjawisk chaotycznych czy interakcji z&nbsp;użytkownikiem. Tym ostatnim rozwiązaniem mógłby być precyzyjny pomiar czasu wciśnięcia przycisku przez użytkownika, ale zakładamy, że chcemy, by urządzenie wyświetlało losowe liczby bez żadnej interakcji. W tym celu użyjemy termometru. Wprawdzie temperatura otoczenia może być bardzo stabilna, jednak na pomiar wykonany z odpowiednią rozdzielczością nałoży się szum termometru i ADC. Analizując więc nie tylko samą temperaturę, ale biorąc pod uwagę jej chaotyczne oscylacje, możemy uzyskać wystarczająco dobre źródło losowości (entropii).
+
+Mikrokontroler ATmega328P wyposażony jest we wbudowany termometr, dzięki czemu nie ma potrzeby uzupełniania urządzenia o dodatkowy sensor.
 
 ## Wymagania funkcjonalne
 
-1. Po wyjściu z edycji nastaw ustawione wartości zapisywane są w pamięci EEPROM mikrokontrolera.
-1. Po zresetowaniu mikrokontrolera wczytywana jest zapamiętana temperatura.
-1. Urządzenie wykrywa niezainicjalizowaną pamięć i używa wówczas domyślnych nastaw.
+1. Po każdym uruchomieniu urządzenie stosuje inne ziarno losowości i wyświetla inne liczby.
 
 ## Modyfikacja programu
 
-### Zapis nastaw
+### Konfiguracja ADC
 
-Uzupełnij metodę `Thermostat::save()` tak, by zapisywała obie nastawy w pamięci EEPROM pod adresami `EEPROM_ADDRESS_TARGET` i `EEPROM_ADDRESS_HYSTERESIS`.
+Odczytaj z dokumentacji mikrokontrolera numer kanału ADC oraz wymagane napięcie referencyjne dla termometru wewnętrznego i skonfiguruj odpowiednio rejestr `ADMUX` w metodzie `Lotto::initialize()`.
 
-### Odczyt nastaw
+\awesomebox[violet]{2pt}{\faBook}{violet}{Potrzebne informacje znajdziesz w sekcji \textit{Temperature Measurement} dokumentacji mikrokontrolera.}
 
-Uzupełnij metodę `Thermostat::restore()` tak, by odczytywała obie nastawy w pamięci EEPROM pod adresami `EEPROM_ADDRESS_TARGET` i `EEPROM_ADDRESS_HYSTERESIS`. Odczyt odbywa się automatycznie przy inicjalizacji urządzenia.
+\awesomebox[purple]{2pt}{\faMicrochip}{purple}{Nieprawidłowa konfiguracja ADC niekoniecznie uniemożliwi działanie algorytmu zbierania entropii (bo nieużywane kanały ADC mogą również generować szum), ale proces zbierania entropii może być dużo dłuższy.}
 
-### Rozpoznanie niezainicjalizowanej pamięci
+Skonfiguruj preskaler ADC i włącz przetwornik:
 
-Po wciśnięciu przycisku _RIGHT_ uruchamiana jest procedura czyszczenia pamięci EEPROM, tj.&nbsp;wypełniania jej wartościami \lstinline{0xFF}, które prowadzą do interpretacji wartości zadanej temperatury i&nbsp;histerezy jako _nie-liczb_.
+```
+ADCSRA = _BV(ADEN) | _BV(ADPS2) | _BV(ADPS1) | _BV(ADPS0);
+```
 
-\begin{center}
-\LCD{2}{16}
-    |T: nan{degree}C H:nan{degree}C|
-    |  24.0{degree}C [----] |
-\captionof{figure}{Odczyt niezainicjalizowanej pamięci}
-\end{center}
+Teraz możesz uruchomić pomiar, ustawiając bit `ADSC` (_ADC Start Conversion_) i odczytać wynik z pary rejestrów `ADC` po wyczyszczeniu tego bitu przez przetwornik. Ze względu na zmianę napięcia referencyjnego oraz kondensator podłączony do pinu _AREF_ pierwszy pomiar będzie znacząco zaniżony. Należy odczekać kilka milisekund i wykonać drugi pomiar:
 
-\awesomebox[purple]{2pt}{\faMicrochip}{purple}{Wyczyszczona pamięć EEPROM nie jest wypełniona bajtami \lstinline{0x00}, ale \lstinline{0xFF}. Jest to częsta cecha pamięci nieulotnych.}
+```
+ADCSRA |= _BV(ADSC);
+while (bit_is_set(ADCSRA, ADSC)) ;
+_delay_ms(10);
+ADCSRA |= _BV(ADSC);
+while (bit_is_set(ADCSRA, ADSC)) ;
+uint16_t seed = ADC;
+```
 
-\awesomebox[teal]{2pt}{\faCode}{teal}{Liczba zmiennoprzecinkowa, w której wszystkie bity wykładnika są ustawione (co ma miejsce w wyczyszczonej pamięci EEPROM), nie jest poprawną wartością, ale \textit{nie-liczbą} (ang. \textit{NaN} — \textit{Not a Number}).}
+Odczytaną wartość można wyświetlić na wyświetlaczu i porównać z dokumentacją celem oceny poprawności konfiguracji ADC.
 
-Wartość `NaN` można wykryć za pomocą makra \lstinline{isnan()} zdefiniowanego w bibliotece \lstinline{math.h}. Po wykryciu takiej wartości należy użyć wartości domyślnych dla nastaw: `TARGET_DEFAULT` i&nbsp;`HYSTERESIS_DEFAULT`.
+### Algorytm zbierania entropii
+
+Zaimplementuj algorytm zbierania entropii według poniższego wzoru. Sumujemy tutaj pomiary z ADC tak długo, aż zarejestrujemy 256 zmian wartości temperatury.
+
+\begin{algorithm}
+\caption{Algorytm zbierania entropii}
+\begin{algorithmic}
+    \Repeat
+        \State wykonaj pomiar ADC
+        \State $seed \gets seed + ADC$
+        \If{$ADC \neq poprzedniADC$}
+            \State $poprzedniADC \gets ADC$
+            \State $liczbaZmian \gets liczbaZmian + 1$
+        \EndIf
+    \Until{$liczbaZmian < 256$}
+\end{algorithmic}
+\end{algorithm}
 
 # Zadanie rozszerzone
 
-Celem zadania rozszerzonego jest samodzielna implementacja funkcji odczytującej i zapisującej wartość w pamięci EEPROM.
+Celem zadania rozszerzonego jest sortowanie wylosowanych liczb za pomocą algorytmu z biblioteki standardowej.
 
 ## Wymagania funkcjonalne
 
-1. Funkcjonowanie urządenia nie zmienia się.
+1. Losowane liczby wyświetlane są w kolejności rosnącej.
 
 ## Modyfikacja programu
 
-### Implementacja odczytu wartości `float` z EEPROM
-
-Napisz własną funkcję odczytującą zmienną typu `float` z EEPROM (oczywiście, możesz posłużyć się inną nazwą):
-
-```
-float eeprom_read_float(const float* address)
-```
-
-\awesomebox[violet]{2pt}{\faBook}{violet}{Przykłady procedur odczytu i zapisu do EEPROM znajdziesz w opisie rejestru \texttt{EECR} (\textit{EEPROM Control Register}) w dokumentacji mikrokontrolera.}
-
-Zwróć uwagę, że należy odczytać liczbę bajtów równą rozmiarowi typu `float`. W tym celu możesz zdefiniować tablicę, do której w pętli przepiszesz kolejne bajty z EEPROM:
-
-```
-uint8_t buffer[sizeof(float)];
-```
-
-Bufor można przepisać do zmiennej typu `float` za pomocą funkcji `memcpy()` z biblioteki `string.h`:
-
-```
-float value;
-memcpy(&value, buffer, sizeof(float));
-```
-
-\awesomebox[teal]{2pt}{\faCode}{teal}{Argument funkcji jest typu \lstinline{const float*}, gdyż jest adresem w pamięci, a więc wskaźnikiem. Aby operować na nim jak na liczbie 16-bitowej, w szczególności móc wpisać do pary rejestrów EEAR, można rzutować go na typ \lstinline{uint16_t} za pomocą \lstinline{reinterpret_cast<uint16_t>(address)}.}
-
-### Implementacja odczytu wartości `float` z EEPROM
-
-Analogicznie zaimplementuj funkcję zapisującą zmienną typu `float` do EEPROM:
-
-```
-void eeprom_write_float(float* address, float value)
-```
-
-\awesomebox[purple]{2pt}{\faMicrochip}{purple}{Zwróć uwagę na zależności czasowe przy ustawianiu bitów \lstinline{EEMPE} i \lstinline{EEPE}. Zabezpiecz te operacje blokiem \lstinline{ATOMIC_BLOCK()}.}
+Użyj algorytmu `qsort()` z biblioteki standardowej. Znajdź w Internecie dokumentację tej funkcji i użyj jej na tablicy `result.buffer` w metodzie `Lotto::shuffle()` przed zwróceniem danych. Zwróć uwagę, że ostatnim argumentem funkcji `qsort()` jest wskaźnik na funkcję, która odpowiada za porównywanie danych. Napisz odpowiednią funkcję.
