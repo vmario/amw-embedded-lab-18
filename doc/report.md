@@ -1,5 +1,5 @@
 ---
-title: "Ćwiczenie 17: Przechowywanie danych użytkownika w pamięci EEPROM"
+title: "Ćwiczenie 18: Generator pseudolosowy i wskaźniki na funkcje"
 author: [Mariusz Chilmon <<mariusz.chilmon@ctm.gdynia.pl>>]
 lang: "pl"
 titlepage: no
