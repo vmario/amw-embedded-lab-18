@@ -37,34 +37,38 @@ _W trosce o Państwa wyniki proszę o czytelne wpisywanie nazwisk._
 
 ## Zadanie podstawowe
 
-Jaki jest rozmiar pamięci EEPROM dostępnej w mikrokontrolerze ATmega328P?
+Do którego kanału ADC podłączony jest wewnętrzny termometr? Jakiego napięcia odniesienia wymaga?
 
-\vspace{1.5cm}
+\awesomebox[violet]{2pt}{\faBook}{violet}{Potrzebne informacje znajdziesz w sekcji \textit{Temperature Measurement} dokumentacji mikrokontrolera.}
 
-Ile cyklów zapisu/czyszczenia jest gwarantowane dla pamięci Flash, a ile dla pamięci EEPROM w&nbsp;mikrokontrolerze ATmega328P?
+\vspace{3cm}
 
-\vspace{1.5cm}
+Jakie jest typowe napięcie z termometru wewnętrznego w temperaturze pokojowej?
 
-Jaka jest gwarantowana retencja danych w pamięciach nieulotnych w temperaturze pokojowej, a jaka w temperaturze 85&deg;C?
+\vspace{3cm}
 
-\vspace{1.5cm}
+Przelicz to napięcie na wartość pomiaru w rejestrze ADC.
 
-\awesomebox[violet]{2pt}{\faBook}{violet}{Odpowiedzi na powyższe pytania znajdziesz na pierwszej stronie dokumentacji mikrokontrolera.}
+\awesomebox[violet]{2pt}{\faBook}{violet}{Potrzebne informacje znajdziesz w sekcji \textit{ADC Conversion Result} dokumentacji mikrokontrolera.}
+
+\vspace{2.5cm}
 
 ## Zadanie rozszerzone
 
-Ile zajmuje zapis jednego bajtu w pamięci EEPROM?
+W bieżącym ćwiczeniu szum na przetworniku ADC jest dla nas zjawiskiem korzystnym, gdyż zwiększa entropię, ale podczas precyzyjnych pomiarów jest szkodliwym zakłóceniem. W jaki sposób mikrokontroler ATmega328P umożliwia zmniejszenie tego szumu?
 
-\vspace{1.5cm}
+\awesomebox[violet]{2pt}{\faBook}{violet}{Potrzebne informacje znajdziesz w sekcji \textit{ADC Noise Reduction Mode} dokumentacji mikrokontrolera.}
 
-Ile zajmie zapis całej dostępnej pamięci EEPROM?
-
-\vspace{1.5cm}
-
-\awesomebox[violet]{2pt}{\faBook}{violet}{Stałe czasowe przedstawione są w tabeli \textit{EEPROM Programming Time} w rozdziale \textit{AVR Memories} dokumentacji mikrokontrolera.}
+\vspace{4cm}
 
 ## \faCertificate&nbsp; Zadanie specjalne
 
 _+1 pkt dla osoby, która jako pierwsza poda poprawną odpowiedź._
 
-Czym się różni operacja czyszczenia i zapisu komórki pamięci EEPROM? Po co sterownik EEPROM przewiduje rozdzielenie tych operacji?
+Jeżeli przy `RAND_MAX` równym 0x7fff losujemy liczbę z zakresu [1; 49] za pomocą wyrażenia:
+
+```
+uint8_t value = (rand() % 49) + 1;
+```
+
+to jakie liczby mają odrobinę większe prawdopodobieństwo wylosowania od pozostałych?

@@ -66,7 +66,7 @@ Algorytm Fishera-Yatesa nie zapewnia losowania sam w sobie, ale wymaga użycia z
 
 \awesomebox[teal]{2pt}{\faCode}{teal}{Język C++ od wersji C++11 posiada bibliotekę \lstinline{random}, która zawiera bogaty zestaw narzędzi do generowania wartości pseudolosowych zgodnych z różnymi rozkładami prawdopodobieństwa i z użyciem różnych implementacji generatorów. Ze względu na złożoność nie jest ona dostępna dla platformy AVR.}
 
-Należy jednak pamiętać, że żaden generator pseudolosowy, czyli PRNG (_Pseudorandom Number Generator_), nie generuje liczb losowych! Mikroprocesor jest urządzeniem deterministycznym zaprojektowanym z założeniem, że lepiej, by nie działał w ogóle niż działał w sposób nieprzewidywalny[^1]. Nie istnieje zatem algorytm, który byłby w stanie wygenerować prawdziwie losowe liczby[^2]. Algorytmy PRNG zaprojektowane są w sposób, który zapewnia odpowiedni rozkład generowanych liczb, przypominający losowy, ale wiele z nich jest do tego stopnia deterministycznych, że po zebraniu kilku wygenerowanych liczb można przewidzieć następne. Stąd po każdym włączeniu urządzenia, widoczne są te same liczby — algorytm zaczyna pracę od tej samej wartości.
+Należy jednak pamiętać, że żaden generator pseudolosowy, czyli PRNG (_Pseudorandom Number Generator_), nie generuje liczb losowych! Mikroprocesor jest urządzeniem deterministycznym zaprojektowanym z założeniem, że lepiej, by nie działał w ogóle niż działał w sposób nieprzewidywalny[^1]. Nie istnieje zatem algorytm, który byłby w stanie wygenerować prawdziwie losowe liczby[^2]. Algorytmy PRNG zaprojektowane są w sposób, który zapewnia odpowiedni rozkład generowanych liczb, przypominający losowy, ale wiele z nich jest do tego stopnia deterministycznych, że po zebraniu kilku wygenerowanych liczb można przewidzieć następne. Stąd po każdym włączeniu urządzenia, widoczne są te same wyniki — algorytm zaczyna pracę od tej samej wartości.
 
 [^1]: _Vide_ BOR (_Brown-out Detector_), czyli obwód wyłączający mikrokontroler przy zbyt niskim napięciu zasilania, kiedy część procesora może jeszcze pracować, ale błędnie.
 
@@ -74,7 +74,7 @@ Należy jednak pamiętać, że żaden generator pseudolosowy, czyli PRNG (_Pseud
 
 # Zadanie podstawowe
 
-Celem zadania podstawowego jest inicjalizacja PRNG wartością o charakterze losowym, a przynajmniej bardzo trudnym do przewidzenia i mało powtarzalnym. Idealnym źródłem byłyby zjawiska kwantowe, które z założenia są czysto losowe, co wykazano w wielu złożonych eksperymentach, wykazując brak korelacji z jakimkolwiek czynnikiem, włączając w to sygnały sprzed 10 miliardów lat[^3]. Przykładami źródeł o takim charakterze są szumy śrutowe złącza p-n czy rozpad promieniotwórczy.
+Celem zadania podstawowego jest inicjalizacja PRNG ziarnem, czyli wartością o charakterze losowym, a przynajmniej bardzo trudnym do przewidzenia i mało powtarzalnym. Idealnym źródłem byłyby zjawiska kwantowe, które z założenia są czysto losowe, co sprawdzono w wielu złożonych eksperymentach, wykazując brak korelacji z jakimkolwiek czynnikiem, włączając w to sygnały sprzed 10 miliardów lat[^3]. Przykładami źródeł o takim charakterze są szumy śrutowe złącza p-n czy rozpad promieniotwórczy.
 
 [^3]: Ewentualnie wyniki eksperymentów zostały z góry ustalone u zarania dziejów Wszechświata, ale dla nas jest to nieodróżnialne.
 
@@ -85,6 +85,7 @@ Mikrokontroler ATmega328P wyposażony jest we wbudowany termometr, dzięki czemu
 ## Wymagania funkcjonalne
 
 1. Po każdym uruchomieniu urządzenie stosuje inne ziarno losowości i wyświetla inne liczby.
+1. Użyte ziarno jest wypisywane na wyświetlacz.
 
 ## Modyfikacja programu
 
@@ -102,7 +103,7 @@ Skonfiguruj preskaler ADC i włącz przetwornik:
 ADCSRA = _BV(ADEN) | _BV(ADPS2) | _BV(ADPS1) | _BV(ADPS0);
 ```
 
-Teraz możesz uruchomić pomiar, ustawiając bit `ADSC` (_ADC Start Conversion_) i odczytać wynik z pary rejestrów `ADC` po wyczyszczeniu tego bitu przez przetwornik. Ze względu na zmianę napięcia referencyjnego oraz kondensator podłączony do pinu _AREF_ pierwszy pomiar będzie znacząco zaniżony. Należy odczekać kilka milisekund i wykonać drugi pomiar:
+Teraz możesz uruchomić pomiar, ustawiając bit `ADSC` (_ADC Start Conversion_) i odczytać wynik z&nbsp;pary rejestrów `ADC` po wyczyszczeniu tego bitu przez przetwornik. Ze względu na zmianę napięcia referencyjnego oraz kondensator podłączony do pinu _AREF_ pierwszy pomiar będzie znacząco zaniżony. Należy odczekać kilka milisekund i wykonać drugi pomiar:
 
 ```
 ADCSRA |= _BV(ADSC);
@@ -122,6 +123,8 @@ Zaimplementuj algorytm zbierania entropii według poniższego wzoru. Sumujemy tu
 \begin{algorithm}
 \caption{Algorytm zbierania entropii}
 \begin{algorithmic}
+    \State $liczbaZmian \gets 0$
+    \State $poprzedniADC \gets 0$
     \Repeat
         \State wykonaj pomiar ADC
         \State $seed \gets seed + ADC$
@@ -133,6 +136,10 @@ Zaimplementuj algorytm zbierania entropii według poniższego wzoru. Sumujemy tu
 \end{algorithmic}
 \end{algorithm}
 
+### Inicjalizacja PRNG
+
+Tak obliczonym ziarnem zainicjalizuj PRNG używając funkcji `srand()`. Wyświetl również wartość ziarna na wyświetlaczu LCD.
+
 # Zadanie rozszerzone
 
 Celem zadania rozszerzonego jest sortowanie wylosowanych liczb za pomocą algorytmu z biblioteki standardowej.
@@ -143,4 +150,16 @@ Celem zadania rozszerzonego jest sortowanie wylosowanych liczb za pomocą algory
 
 ## Modyfikacja programu
 
-Użyj algorytmu `qsort()` z biblioteki standardowej. Znajdź w Internecie dokumentację tej funkcji i użyj jej na tablicy `result.buffer` w metodzie `Lotto::shuffle()` przed zwróceniem danych. Zwróć uwagę, że ostatnim argumentem funkcji `qsort()` jest wskaźnik na funkcję, która odpowiada za porównywanie danych. Napisz odpowiednią funkcję.
+Użyj algorytmu `qsort()` z biblioteki standardowej. Znajdź w Internecie dokumentację tej funkcji i&nbsp;użyj jej na tablicy `result.buffer` w metodzie `Lotto::shuffle()` przed zwróceniem danych. Zwróć uwagę, że ostatnim argumentem funkcji `qsort()` jest wskaźnik na funkcję, która odpowiada za porównywanie danych.
+
+Sygnatura tej funkcji powinna przyjmować wskaźnik typu `const void*` (wskaźnik na dowolną wartość), ponieważ `qsort()` może sortować dane różnego rodzaju. Warto na jej początku dokonać konwersji tych wskaźników na `const uint8_t*` i odczytać wartości do zmiennych, na których będzie można prosto operować:
+
+```
+int compare(const void* aPointer, const void* bPointer)
+{
+    uint8_t a = *reinterpret_cast<const uint8_t*>(aPointer);
+    uint8_t b = *reinterpret_cast<const uint8_t*>(bPointer);
+
+    // Compare and return.
+}
+```
